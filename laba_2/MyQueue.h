@@ -4,27 +4,34 @@
 
 // first -> f <- s <- t <- f <- last
 
-#ifndef LABA_2_QUEUE_H
-#define LABA_2_QUEUE_H
+#ifndef LABA_2_MYQUEUE_H
+#define LABA_2_MYQUEUE_H
 
-struct node{
+#include <iostream>
+
+struct Node{
     int data;
-    node *next;
+    Node *next;
+    Node *prev;
 };
 
-class Queue {
+class MyQueue {
 public:
-    Queue();
-    ~Queue();
-    bool isEmpty();
+    int size;
+    Node *first;
+    Node *last;
+
+    MyQueue();
+    ~MyQueue();
+    bool isEmpty() const;
     void push(int tempData);
     int pop();
+    void show();
 
 private:
-    int size;
-    node *first;
-    node *last;
+    Node *next;
+    Node *prev;
 };
 
 
-#endif //LABA_2_QUEUE_H
+#endif //LABA_2_MYQUEUE_H
