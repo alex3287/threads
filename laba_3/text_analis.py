@@ -1,13 +1,6 @@
-# Частотный анализатор текстов. 2 “читающих” потока считывают данные из текста(-ов).
-# Поток-интерфейс отвечает за взаимодействие с пользователем через командную строку.
-# Пользователю доступны следующие команды: вывести на экран 5 самых распространённых
-# на данный момент букв; вывести на экран вероятность появление буквы, введённой
-# пользователем; выдать три самые редкие буквы. Внутренний поток обрабатывает запросы
-# пользователя в соответствии с актуальной на данный момент информацией,
-# собранной “читающими” потоками.
-
 from threading import *
 from time import time, sleep
+from heapq import nlargest, nsmallest
 
 
 class ThreadWithReturn(Thread):
@@ -51,10 +44,6 @@ def merge_two_dict(A, B):
     return R
 
 
-def maxi_5_letters(D):
-    pass
-
-
 def work_thread():
     '''функция для работы с потоками'''
     t1 = ThreadWithReturn(target=read_file, args=('first.txt',))
@@ -64,30 +53,18 @@ def work_thread():
     thread_t1 = t1.join()
     thread_t2 = t2.join()
     full_dict = merge_two_dict(thread_t1, thread_t2)
-    maxi = maxi_5_letters(full_dict)
+    maxi_5_letter = nlargest(5, full_dict, key=lambda x: full_dict[x])
+    mini_3_letter = nsmallest(3, full_dict, key=lambda x: full_dict[x])
     print(thread_t1)
     print(thread_t2)
     print(full_dict)
-    print(maxi)
+    print(maxi_5_letter)
+    print(mini_3_letter)
 
 
-# t1 = ThreadWithReturn(target=read_file, args=('24-s1.txt',))
-# t2 = ThreadWithReturn(target=read_file, args=('24_2.txt',))
 
 start = time()
-# print(read_file('24-s1.txt'))
-# print(read_file('24-s1.txt'))
-# t1.start()
-# t2.start()
-# thread_t1 = t1.join()
-# thread_t2 = t2.join()
-# t1.join()
-# t2.join()
 
-# full_dict = merge_two_dict(thread_t1, thread_t2)
-# print(thread_t1, '\n', t1.name)
-# print(thread_t2, '\n', t2.name)
-# print(full_dict)
 work_thread()
 finish = time()
 print(finish-start)
