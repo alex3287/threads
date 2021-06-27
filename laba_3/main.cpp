@@ -9,25 +9,36 @@
 #include <fstream>
 #include <thread>
 #include <map>
+#include <mutex>
+#include <algorithm>
 
 using namespace std;
 
-void readFile(string fileName, map<char, int> &letters){
+void readFile(ifstream &fin, map<char, int> &letters, mutex &fileM, mutex &dictM, map<char, int> &maxi5, map<char, int> &mini3){
 //    cout<<"ID потока = "<< this_thread::get_id()<<" readFile "<<endl;
 //    this_thread::sleep_for(chrono::milliseconds(500));
+
     string str;
-    ifstream fin;
-    fin.open(fileName);
     if (fin.is_open()){
-        fin >> str;  // fixme  как читает?
-        cout<<"Read file "<<endl;
-        for (char i: str){
-            if (letters.contains(i)){
-                letters[i]++;
+        while (!fin.eof()) {
+            {lock_guard<mutex>blockF(fileM); getline(fin, str); }  //TODO look
+            cout<<"Read file "<<endl; // fixme delete
+            for (const char &i: str){
+                {lock_guard<mutex>blockD(dictM); letters[i]++;
+                if (maxi5.size() < 5 || maxi5.count(i)){
+                    maxi5[i] = letters[i];
+                }
+                else {
+                    auto temp = min_element(maxi5.begin(), maxi5.end(), [](const auto &a, const auto &b) -> bool{return a.second < b.second;});
+                    if (temp->second < letters[i]){
+                        maxi5.erase(temp);
+                        maxi5[i] = letters[i];
+                    }
+                }
+                }
             }
-            else
-                letters[i]=1;
         }
+
     } else {
         cout<<"Do not read file"<<endl;
     }
@@ -36,19 +47,13 @@ void readFile(string fileName, map<char, int> &letters){
 
 int main() {
     thread T1, T2;
-
+    mutex fileM1, fileM2, dictM;
     string files[4] {"../first.txt", "../second.txt", "../third.txt", "../fourth.txt"};
-    map<char, int> letters;
-//    for (auto fileName: files)
-//        readFile(fileName, letters);
-    T1 = thread(readFile, "../first.txt", ref(letters) );
-    T1.join();
-//    output map
-    for (auto i:letters)
-        cout<<i.first<<" -> "<<i.second<<endl;
-
-
-//    cout<<letters.contains('v')<<endl;
+    map<char, int> letters, maxi5, mini3;
+    ifstream file1("../first.txt");
+    ifstream file2("../second.txt");
+    T1 = thread(readFile, ref(file1), ref(letters), ref(fileM1), ref(dictM), ref(maxi5), ref(mini3));
+    T2 = thread(readFile, ref(file2), ref(letters), ref(fileM2), ref(dictM), ref(maxi5), ref(mini3) );
 
 
 //    std::thread *threadReader = new std::thread[2];
@@ -61,11 +66,23 @@ int main() {
         std::cout<<"3 - выдать три самые редкие буквы"<<std::endl;
         std::cin>>answer;
         switch (answer) {
-            case 1: std::cout<<"function five"<<std::endl; break;
+            case 1: { lock_guard<mutex>blockM (dictM);
+                        for (const auto &i:maxi5)
+                            cout<<i.first<<" -> "<<i.second<<endl;}; break;
             case 2: std::cout<<"function letter"<<std::endl; break;
-            case 3: std::cout<<"function three"<<std::endl; break;
+            case 3: { lock_guard<mutex>blockM (dictM);
+                        for (const auto &i:mini3)
+                            cout<<i.first<<" -> "<<i.second<<endl;}; break;
+            case 4: {
+                //  TODO  output map
+                lock_guard<mutex>blockM (dictM);
+                for (const auto &i:letters)
+                    cout<<i.first<<" -> "<<i.second<<endl;
+            }
         }
     }
 
+    T1.join();
+    T2.join();
     return 0;
 }
