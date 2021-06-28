@@ -22,9 +22,10 @@ void readFile(ifstream &fin, map<char, int> &letters, mutex &fileM, mutex &dictM
     if (fin.is_open()){
         while (!fin.eof()) {
             {lock_guard<mutex>blockF(fileM); getline(fin, str); }  //TODO look
-            cout<<"Read file "<<endl; // fixme delete
+//            cout<<"Read file "<<endl; // TODO this test
             for (const char &i: str){
                 {lock_guard<mutex>blockD(dictM); letters[i]++;
+                    // collection 5 max letter
                 if (maxi5.size() < 5 || maxi5.count(i)){
                     maxi5[i] = letters[i];
                 }
@@ -38,9 +39,23 @@ void readFile(ifstream &fin, map<char, int> &letters, mutex &fileM, mutex &dictM
                 }
             }
         }
-
+        // 3 min letters
+        { lock_guard<mutex>blockD(dictM);
+            for (auto &item: letters){
+                if (mini3.size() < 3) {
+                    mini3[item.first] = item.second;
+                }
+                else {
+                    auto temp = max_element(mini3.begin(), mini3.end(), [](const auto &a, const auto &b) -> bool{return a.second < b.second;});
+                    if (temp->second > item.second) {
+                        mini3.erase(temp);
+                        mini3[item.first] = item.second;
+                    }
+                }
+            }
+        }
     } else {
-        cout<<"Do not read file"<<endl;
+        cout<<"Do not read file"<<endl;  //TODO this test
     }
     fin.close();
 }
