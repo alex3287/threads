@@ -15,7 +15,7 @@
 using namespace std;
 
 void readFile(ifstream &fin, map<char, int> &letters, mutex &fileM, mutex &dictM, map<char, int> &maxi5,
-              map<char, int> &mini3) {
+              map<char, int> &mini3, int &count_chars) {
 //    cout<<"ID потока = "<< this_thread::get_id()<<" readFile "<<endl;
 
 
@@ -31,6 +31,7 @@ void readFile(ifstream &fin, map<char, int> &letters, mutex &fileM, mutex &dictM
                 {
                     lock_guard<mutex> blockD(dictM);
                     letters[i]++;
+                    count_chars ++;
                     // collection 5 max letter
                     if (maxi5.size() < 5 || maxi5.count(i)) {
                         maxi5[i] = letters[i];
@@ -74,14 +75,15 @@ int main() {
     mutex fileM1, fileM2, dictM;
     string files[4]{"../first.txt", "../second.txt", "../third.txt", "../fourth.txt"};
     map<char, int> letters, maxi5, mini3;
+    int count_chars = 0;
     ifstream file1("../first.txt");
     ifstream file2("../second.txt");
-    T1 = thread(readFile, ref(file1), ref(letters), ref(fileM1), ref(dictM), ref(maxi5), ref(mini3));
-    T2 = thread(readFile, ref(file2), ref(letters), ref(fileM2), ref(dictM), ref(maxi5), ref(mini3));
+    T1 = thread(readFile, ref(file1), ref(letters), ref(fileM1), ref(dictM), ref(maxi5), ref(mini3), ref(count_chars));
+    T2 = thread(readFile, ref(file2), ref(letters), ref(fileM2), ref(dictM), ref(maxi5), ref(mini3), ref(count_chars));
 
 
 //    std::thread *threadReader = new std::thread[2];
-    int answer = 3;
+    int answer = 5;
     while (answer) {
         std::cout << "Выбирите действие" << std::endl;
         std::cout << "0 - завершить работу" << std::endl;
@@ -96,8 +98,19 @@ int main() {
                     cout << i.first << " -> " << i.second << endl;
             };
                 break;
-            case 2:
-                std::cout << "function letter" << std::endl;
+            case 2: {
+                std::cout << "Enter any letter " << std::endl;
+                char letter;
+                std::cin>>letter;
+                double result = 0;
+                {
+                    lock_guard<mutex> blockM(dictM);
+                    if (count_chars){
+                        result = (letters[letter] * 1.0  / count_chars);
+                    }
+                }
+                std::cout<<"Probability letter "<<letter<<" = "<<result<<std::endl;
+            }
                 break;
             case 3: {
                 lock_guard<mutex> blockM(dictM);
@@ -110,6 +123,7 @@ int main() {
                 lock_guard<mutex> blockM(dictM);
                 for (const auto &i:letters)
                     cout << i.first << " -> " << i.second << endl;
+                    cout << "count letters " <<count_chars<< endl;
             }
         }
     }
